@@ -36,18 +36,93 @@ that parsing layer (`youtube-music/parsers.ts`, ~600 lines) wasn't ported.
 
 ## Setup
 
-1. Register a Google Cloud OAuth 2.0 client (Desktop or Web application
-   type), with redirect URI `http://127.0.0.1:8765/oauth/callback`
-   (or whatever `OAUTH_REDIRECT_PORT` you set).
-2. `cp .env.example .env` and fill in `GOOGLE_OAUTH_CLIENT_ID`,
+1. In the [Google Cloud Console](https://console.cloud.google.com/), create a
+   project and **enable the YouTube Data API v3** on it. Creating an OAuth
+   client alone is not enough — with the API disabled, `authenticate` still
+   succeeds but every playlist/library call fails at runtime.
+2. Create an OAuth 2.0 client (Desktop or Web application type) with redirect
+   URI `http://127.0.0.1:8765/oauth/callback` (or whatever
+   `OAUTH_REDIRECT_PORT` you set). The server requests one scope,
+   `https://www.googleapis.com/auth/youtube` — full read/write on your
+   YouTube account, including creating and **deleting** playlists.
+3. `cp .env.example .env` and fill in `GOOGLE_OAUTH_CLIENT_ID`,
    `GOOGLE_OAUTH_CLIENT_SECRET`, and `ENCRYPTION_KEY`
    (`openssl rand -base64 32`).
-3. `cargo build --release`
-4. Run it directly once to authenticate:
-   `env $(cat .env | xargs) ./target/release/ytmusic-rs`, then call the
-   `authenticate` tool from any MCP client (or via
-   `npx @modelcontextprotocol/inspector`) and open the printed URL in a
-   browser. The token is cached encrypted on disk after that.
+4. `cargo build --release`
+5. Authenticate once: register the server with an MCP client (see below) and
+   call the `authenticate` tool, or drive it directly with
+   `npx @modelcontextprotocol/inspector`. The tool returns a Google consent
+   URL in its response and deliberately does not block — open that URL
+   yourself (nothing auto-opens a browser), approve access, then call
+   `auth_status` to confirm the token landed. It's cached encrypted on disk
+   after that.
+
+To run the binary standalone with `.env` loaded:
+
+```sh
+# bash / zsh
+env $(cat .env | xargs) ./target/release/ytmusic-rs
+```
+
+```powershell
+# PowerShell
+Get-Content .env | Where-Object { $_ -match '^\s*[^#].+=' } | ForEach-Object {
+    $k, $v = $_ -split '=', 2
+    [Environment]::SetEnvironmentVariable($k.Trim(), $v.Trim())
+}
+./target/release/ytmusic-rs.exe
+```
+
+### Token lifetime and Google publishing status
+
+A new OAuth client starts in **Testing** status, and for the `youtube` scope
+Google expires test users' refresh tokens after **7 days** — so auth breaks
+weekly and you have to re-run `authenticate`. Testing status also caps you at
+100 explicitly-added test users. Taking the consent screen through Google's
+verification to **In production** is what removes the weekly re-auth.
+
+Sharing a built binary is also not enough to share access: whoever runs it
+needs their own `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`.
+Being added as a test user only grants permission to consent against someone
+else's app — the durable path is each person registering their own OAuth
+client per the steps above.
+
+## Registering with an MCP client
+
+This is a stdio server: point the client at the built binary and pass config
+through `env`. All configuration comes from environment variables, and the
+server refuses to start if `GOOGLE_OAUTH_CLIENT_ID`,
+`GOOGLE_OAUTH_CLIENT_SECRET`, or `ENCRYPTION_KEY` is missing — a bare
+`command` entry with no `env` block fails immediately.
+
+```json
+{
+  "mcpServers": {
+    "ytmusic": {
+      "command": "/absolute/path/to/ytmusic-rs/target/release/ytmusic-rs",
+      "env": {
+        "GOOGLE_OAUTH_CLIENT_ID": "...",
+        "GOOGLE_OAUTH_CLIENT_SECRET": "...",
+        "ENCRYPTION_KEY": "...",
+        "OAUTH_REDIRECT_PORT": "8765",
+        "TOKEN_STORAGE_PATH": "/absolute/path/to/tokens.enc"
+      }
+    }
+  }
+}
+```
+
+On Windows, use the `.exe` and escape backslashes:
+`"C:\\path\\to\\ytmusic-rs\\target\\release\\ytmusic-rs.exe"`.
+
+`TOKEN_STORAGE_PATH` is optional but worth setting explicitly. It defaults to
+`$HOME/.config/ytmusic-rs/tokens.enc`, and on Windows `HOME` is usually
+unset — in which case it falls back to `./tokens.enc`, relative to whatever
+working directory the MCP client happened to launch the server in.
+
+The OAuth callback listener binds `127.0.0.1` on the machine running the
+server, so the browser you approve consent in has to be on that same machine.
+Remote, headless, or SSH setups will hang until the 3-minute timeout.
 
 ## Tools
 
