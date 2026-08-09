@@ -121,9 +121,17 @@ On Windows, use the `.exe` and escape backslashes:
 `"C:\\path\\to\\ytmusic-rs\\target\\release\\ytmusic-rs.exe"`.
 
 `TOKEN_STORAGE_PATH` is optional but worth setting explicitly. It defaults to
-`$HOME/.config/ytmusic-rs/tokens.enc`, and on Windows `HOME` is usually
-unset — in which case it falls back to `./tokens.enc`, relative to whatever
-working directory the MCP client happened to launch the server in.
+`$HOME/.config/ytmusic-rs/tokens.enc`; on Windows `HOME` is usually unset, in
+which case `$HOME` resolves to `.` and the token lands in
+`./.config/ytmusic-rs/tokens.enc` — relative to whatever working directory the
+MCP client happened to launch the server in.
+
+Either set it to a real path or omit the variable entirely. Leaving
+`TOKEN_STORAGE_PATH=` blank (the way `.env.example` ships it) exports an empty
+string, which still counts as "set": the server starts fine, but the token has
+nowhere valid to be written, so `authenticate` looks like it succeeded in the
+browser while `auth_status` keeps reporting "Not authenticated". Unlike
+`ENCRYPTION_KEY`, an empty value here is not rejected at startup.
 
 The OAuth callback listener binds `127.0.0.1` on the machine running the
 server, so the browser you approve consent in has to be on that same machine.
