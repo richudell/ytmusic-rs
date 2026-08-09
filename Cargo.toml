@@ -1,0 +1,31 @@
+[package]
+name = "ytmusic-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Rich Udell"]
+license = "MIT"
+description = "YouTube Music MCP server (stdio) - Rust port of youtube-music-mcp-server, core search/playlist tools only"
+
+[dependencies]
+rmcp = { version = "=1.4.0", features = ["server", "transport-io", "macros"] }
+# rmcp 1.4.0 doesn't pin its own macro crate tightly, so Cargo happily
+# resolves rmcp-macros to a newer release (1.8.0 as of this writing) whose
+# generated code calls a `schema_for_input` helper that doesn't exist in
+# rmcp 1.4.0's `handler::server::common` module — a real upstream
+# version-skew bug. Pin it to match explicitly.
+rmcp-macros = "=1.4.0"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1.0"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+anyhow = "1"
+thiserror = "2"
+aes-gcm = "0.10"
+rand = "0.8"
+base64 = "0.22"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = { version = "0.4", features = ["serde"] }
+urlencoding = "2"
+sha2 = "0.10"
