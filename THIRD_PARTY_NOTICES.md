@@ -1,5 +1,12 @@
 # Third-Party Notices
 
+`ytmusic-rs` itself is a derivative work, released under the MIT license in
+[`LICENSE`](LICENSE). This file records what it derives from and the
+attribution owed to that upstream project. (This statement previously lived
+as a trailing note in `LICENSE`; it was moved here so that `LICENSE` contains
+unmodified MIT text and is correctly identified by automated license
+scanners.)
+
 Design and tool surface inspired by
 [`CaullenOmdahl/youtube-music-mcp-server`](https://github.com/CaullenOmdahl/youtube-music-mcp-server)
 (MIT). This project is a from-scratch Rust reimplementation — no source was
