@@ -15,11 +15,15 @@ pub struct StoredToken {
     pub expires_at: i64,
 }
 
+/// Refresh this far ahead of expiry, same margin as the TS original.
+/// Shared so `auth_status` reports the same boundary that triggers a refresh,
+/// rather than restating the number and drifting from it.
+pub const REFRESH_MARGIN_MS: i64 = 300_000;
+
 impl StoredToken {
     pub fn needs_refresh(&self) -> bool {
         let now = chrono::Utc::now().timestamp_millis();
-        // Refresh 5 minutes before expiry, same margin as the TS original.
-        self.expires_at - 300_000 < now
+        self.expires_at - REFRESH_MARGIN_MS < now
     }
 }
 

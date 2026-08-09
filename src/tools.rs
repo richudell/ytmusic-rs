@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::oauth;
-use crate::token_store::{StoredToken, TokenStore};
+use crate::token_store::{StoredToken, TokenStore, REFRESH_MARGIN_MS};
 use crate::ytdata_client::YouTubeDataClient;
 use crate::ytmusic_client::YouTubeMusicClient;
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -25,6 +25,30 @@ fn ok_text(text: impl Into<String>) -> Result<CallToolResult, McpError> {
 
 fn to_mcp_err(e: anyhow::Error) -> McpError {
     McpError::internal_error(e.to_string(), None)
+}
+
+/// Describe a stored token in the same terms `valid_access_token` acts on.
+///
+/// Reporting a bare "Authenticated" with a `.max(0)` countdown meant an
+/// expired token displayed as "expires in 0 seconds" — indistinguishable
+/// from a healthy one about to lapse, and silent about the fact that the
+/// next call would refresh it. Takes `now` so it stays pure and testable.
+fn describe_auth_state(expires_at: i64, now: i64) -> String {
+    let remaining_secs = (expires_at - now) / 1000;
+    if remaining_secs <= 0 {
+        format!(
+            "Authenticated, but the access token expired {} seconds ago. It will be \
+             refreshed automatically on the next authenticated call.",
+            -remaining_secs
+        )
+    } else if expires_at - REFRESH_MARGIN_MS < now {
+        format!(
+            "Authenticated. Access token expires in {remaining_secs} seconds, which is \
+             inside the refresh margin — it will be refreshed on the next authenticated call."
+        )
+    } else {
+        format!("Authenticated. Access token valid for another {remaining_secs} seconds.")
+    }
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -186,10 +210,7 @@ impl YtMusicServer {
         match self.token_store.load().await.map_err(to_mcp_err)? {
             Some(StoredToken { expires_at, .. }) => {
                 let now = chrono::Utc::now().timestamp_millis();
-                ok_text(format!(
-                    "Authenticated. Token expires in {} seconds.",
-                    ((expires_at - now).max(0)) / 1000
-                ))
+                ok_text(describe_auth_state(expires_at, now))
             }
             None => ok_text("Not authenticated. Call the `authenticate` tool."),
         }
@@ -381,5 +402,48 @@ impl ServerHandler for YtMusicServer {
              Call `authenticate` once before any playlist/library tool."
                 .to_string(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{describe_auth_state, REFRESH_MARGIN_MS};
+
+    // `now` is passed explicitly so these don't depend on wall-clock timing.
+    const NOW: i64 = 1_700_000_000_000;
+
+    #[test]
+    fn healthy_token_reports_remaining_lifetime() {
+        let s = describe_auth_state(NOW + 3_600_000, NOW);
+        assert!(s.contains("valid for another 3600 seconds"), "{s}");
+        assert!(!s.contains("refresh"), "{s}");
+    }
+
+    #[test]
+    fn token_inside_refresh_margin_says_it_will_refresh() {
+        let s = describe_auth_state(NOW + 60_000, NOW);
+        assert!(s.contains("expires in 60 seconds"), "{s}");
+        assert!(s.contains("inside the refresh margin"), "{s}");
+    }
+
+    #[test]
+    fn expired_token_is_not_reported_as_simply_authenticated() {
+        let s = describe_auth_state(NOW - 120_000, NOW);
+        assert!(s.contains("expired 120 seconds ago"), "{s}");
+        assert!(s.contains("refreshed automatically"), "{s}");
+        // The old formatting collapsed every expired token to this.
+        assert!(!s.contains("expires in 0 seconds"), "{s}");
+    }
+
+    #[test]
+    fn exactly_expired_counts_as_expired_not_valid() {
+        let s = describe_auth_state(NOW, NOW);
+        assert!(s.contains("expired 0 seconds ago"), "{s}");
+    }
+
+    #[test]
+    fn boundary_just_outside_margin_is_reported_healthy() {
+        let s = describe_auth_state(NOW + REFRESH_MARGIN_MS + 1_000, NOW);
+        assert!(s.contains("valid for another"), "{s}");
     }
 }
