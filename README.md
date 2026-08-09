@@ -1,5 +1,10 @@
 # ytmusic-rs
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-2021%20edition-dea584?logo=rust&logoColor=white)](https://doc.rust-lang.org/edition-guide/rust-2021/index.html)
+[![MCP](https://img.shields.io/badge/MCP-stdio%20server-5865f2)](https://modelcontextprotocol.io/)
+[![rmcp](https://img.shields.io/badge/rmcp-pinned%201.4.0-6e7781)](https://crates.io/crates/rmcp/1.4.0)
+
 Rust port by Rich Udell (2026), licensed MIT — see [`LICENSE`](LICENSE).
 
 A Rust rewrite of the core (search + playlist) tools from
