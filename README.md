@@ -1,5 +1,7 @@
 # ytmusic-rs
 
+[![CI](https://github.com/richudell/ytmusic-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/richudell/ytmusic-rs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/richudell/ytmusic-rs/branch/main/graph/badge.svg)](https://codecov.io/gh/richudell/ytmusic-rs)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2021%20edition-dea584?logo=rust&logoColor=white)](https://doc.rust-lang.org/edition-guide/rust-2021/index.html)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-5865f2)](https://modelcontextprotocol.io/)
