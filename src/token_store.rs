@@ -228,7 +228,11 @@ mod tests {
         };
         store.save(&token).await.unwrap();
 
-        let loaded = store.load().await.unwrap().expect("token should be present");
+        let loaded = store
+            .load()
+            .await
+            .unwrap()
+            .expect("token should be present");
         assert_eq!(loaded.access_token, token.access_token);
         assert_eq!(loaded.refresh_token, token.refresh_token);
         assert_eq!(loaded.expires_at, token.expires_at);

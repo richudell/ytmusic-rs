@@ -65,7 +65,10 @@ impl YouTubeDataClient {
             .into_iter()
             .map(|it| PlaylistSummary {
                 id: it["id"].as_str().unwrap_or_default().to_string(),
-                title: it["snippet"]["title"].as_str().unwrap_or_default().to_string(),
+                title: it["snippet"]["title"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_string(),
                 description: it["snippet"]["description"]
                     .as_str()
                     .unwrap_or_default()
@@ -109,7 +112,10 @@ impl YouTubeDataClient {
                     .as_str()
                     .unwrap_or_default()
                     .to_string(),
-                title: it["snippet"]["title"].as_str().unwrap_or_default().to_string(),
+                title: it["snippet"]["title"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_string(),
                 channel_title: it["snippet"]["videoOwnerChannelTitle"]
                     .as_str()
                     .unwrap_or_default()

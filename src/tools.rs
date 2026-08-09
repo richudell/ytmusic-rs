@@ -148,14 +148,13 @@ impl YtMusicServer {
     /// soon. Returns a clear error (not a panic/crash) if the user hasn't
     /// run `authenticate` yet.
     async fn valid_access_token(&self) -> anyhow::Result<String> {
-        let stored = self
-            .token_store
-            .load()
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("Not authenticated yet — call the `authenticate` tool first."))?;
+        let stored = self.token_store.load().await?.ok_or_else(|| {
+            anyhow::anyhow!("Not authenticated yet — call the `authenticate` tool first.")
+        })?;
 
         if stored.needs_refresh() {
-            let refreshed = oauth::refresh_access_token(&self.config, &stored.refresh_token).await?;
+            let refreshed =
+                oauth::refresh_access_token(&self.config, &stored.refresh_token).await?;
             self.token_store.save(&refreshed).await?;
             Ok(refreshed.access_token)
         } else {
@@ -183,11 +182,9 @@ impl YtMusicServer {
         let token_store = self.token_store.clone();
         tokio::spawn(async move {
             let outcome: anyhow::Result<()> = async {
-                let code =
-                    oauth::wait_for_callback(config.oauth_redirect_port, &req.state).await?;
+                let code = oauth::wait_for_callback(config.oauth_redirect_port, &req.state).await?;
                 let token =
-                    oauth::exchange_code(&config, &code, &req.verifier, &req.redirect_uri)
-                        .await?;
+                    oauth::exchange_code(&config, &code, &req.verifier, &req.redirect_uri).await?;
                 token_store.save(&token).await
             }
             .await;
@@ -260,7 +257,9 @@ impl YtMusicServer {
         ok_json(&details)
     }
 
-    #[tool(description = "List your liked videos (\"Liked Music\" playlist). Requires authenticate first.")]
+    #[tool(
+        description = "List your liked videos (\"Liked Music\" playlist). Requires authenticate first."
+    )]
     async fn get_liked_videos(
         &self,
         Parameters(p): Parameters<LimitParams>,
@@ -288,7 +287,9 @@ impl YtMusicServer {
         ok_json(&playlists)
     }
 
-    #[tool(description = "List the tracks in a playlist by playlist ID. Requires authenticate first.")]
+    #[tool(
+        description = "List the tracks in a playlist by playlist ID. Requires authenticate first."
+    )]
     async fn get_playlist_items(
         &self,
         Parameters(p): Parameters<PlaylistIdParams>,
@@ -321,7 +322,9 @@ impl YtMusicServer {
         ok_text(format!("Created playlist: {id}"))
     }
 
-    #[tool(description = "Update a playlist's title/description/privacy. Requires authenticate first.")]
+    #[tool(
+        description = "Update a playlist's title/description/privacy. Requires authenticate first."
+    )]
     async fn update_playlist(
         &self,
         Parameters(p): Parameters<UpdatePlaylistParams>,
@@ -359,7 +362,9 @@ impl YtMusicServer {
         ok_text("Playlist deleted.")
     }
 
-    #[tool(description = "Add one or more videos to a playlist by video ID. Requires authenticate first.")]
+    #[tool(
+        description = "Add one or more videos to a playlist by video ID. Requires authenticate first."
+    )]
     async fn add_to_playlist(
         &self,
         Parameters(p): Parameters<AddToPlaylistParams>,
@@ -391,17 +396,15 @@ impl YtMusicServer {
 #[tool_handler]
 impl ServerHandler for YtMusicServer {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(
-            ServerCapabilities::builder().enable_tools().build(),
-        )
-        .with_server_info(Implementation::from_build_env())
-        .with_protocol_version(ProtocolVersion::V_2024_11_05)
-        .with_instructions(
-            "YouTube Music MCP server (Rust port, core search/playlist tools only — \
+        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
+            .with_server_info(Implementation::from_build_env())
+            .with_protocol_version(ProtocolVersion::V_2024_11_05)
+            .with_instructions(
+                "YouTube Music MCP server (Rust port, core search/playlist tools only — \
              no Spotify/MusicBrainz/adaptive-playlist recommendation engine, no database). \
              Call `authenticate` once before any playlist/library tool."
-                .to_string(),
-        )
+                    .to_string(),
+            )
     }
 }
 

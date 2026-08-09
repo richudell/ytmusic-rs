@@ -41,7 +41,10 @@ pub fn build_auth_request(config: &Config) -> AuthRequest {
     let verifier = random_url_safe(64);
     let challenge = pkce_challenge(&verifier);
     let state = random_url_safe(24);
-    let redirect_uri = format!("http://127.0.0.1:{}/oauth/callback", config.oauth_redirect_port);
+    let redirect_uri = format!(
+        "http://127.0.0.1:{}/oauth/callback",
+        config.oauth_redirect_port
+    );
 
     let url = format!(
         "{AUTH_ENDPOINT}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code\
@@ -81,10 +84,7 @@ pub async fn wait_for_callback(port: u16, expected_state: &str) -> anyhow::Resul
                 .split('&')
                 .filter_map(|pair| {
                     let (k, v) = pair.split_once('=')?;
-                    Some((
-                        k.to_string(),
-                        urlencoding::decode(v).ok()?.into_owned(),
-                    ))
+                    Some((k.to_string(), urlencoding::decode(v).ok()?.into_owned()))
                 })
                 .collect();
 
@@ -190,7 +190,9 @@ pub async fn refresh_access_token(
     Ok(StoredToken {
         access_token: resp.access_token,
         // Google usually doesn't re-issue a refresh_token on refresh; keep the old one.
-        refresh_token: resp.refresh_token.unwrap_or_else(|| refresh_token.to_string()),
+        refresh_token: resp
+            .refresh_token
+            .unwrap_or_else(|| refresh_token.to_string()),
         expires_at: chrono::Utc::now().timestamp_millis() + resp.expires_in * 1000,
     })
 }
@@ -237,14 +239,16 @@ mod tests {
         // so this doesn't just test "the function agrees with itself".
         let mut hasher = Sha256::new();
         hasher.update(verifier.as_bytes());
-        let expected =
-            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hasher.finalize());
+        let expected = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hasher.finalize());
         assert_eq!(challenge_a, expected);
     }
 
     #[test]
     fn pkce_challenge_differs_for_different_verifiers() {
-        assert_ne!(pkce_challenge("verifier-one"), pkce_challenge("verifier-two"));
+        assert_ne!(
+            pkce_challenge("verifier-one"),
+            pkce_challenge("verifier-two")
+        );
     }
 
     #[test]
@@ -267,7 +271,9 @@ mod tests {
 
         // The URL's code_challenge must match PKCE-deriving the returned verifier.
         let expected_challenge = pkce_challenge(&req.verifier);
-        assert!(req.url.contains(&format!("code_challenge={expected_challenge}")));
+        assert!(req
+            .url
+            .contains(&format!("code_challenge={expected_challenge}")));
     }
 
     #[test]

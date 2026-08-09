@@ -27,7 +27,12 @@ const YTM_API_KEY: &str = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
 
 fn client_version() -> String {
     let now = chrono::Utc::now();
-    format!("1.{:04}{:02}{:02}.01.00", now.year(), now.month(), now.day())
+    format!(
+        "1.{:04}{:02}{:02}.01.00",
+        now.year(),
+        now.month(),
+        now.day()
+    )
 }
 
 fn context() -> Value {
@@ -58,7 +63,9 @@ pub struct YouTubeMusicClient {
 impl YouTubeMusicClient {
     pub fn new() -> Self {
         let http = reqwest::Client::builder()
-            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0")
+            .user_agent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0",
+            )
             .timeout(std::time::Duration::from_secs(30))
             .build()
             .expect("failed to build reqwest client");
@@ -250,10 +257,7 @@ mod tests {
         // e.g. "1.20260808.01.00"
         let re_ok = v.starts_with("1.")
             && v.ends_with(".01.00")
-            && v.trim_start_matches("1.")
-                .trim_end_matches(".01.00")
-                .len()
-                == 8;
+            && v.trim_start_matches("1.").trim_end_matches(".01.00").len() == 8;
         assert!(re_ok, "unexpected client_version format: {v}");
     }
 
@@ -262,7 +266,10 @@ mod tests {
         let node = serde_json::json!({
             "text": { "runs": [ { "text": "Sweet " }, { "text": "Child " }, { "text": "O' Mine" } ] }
         });
-        assert_eq!(text_runs_joined(&node), Some("Sweet Child O' Mine".to_string()));
+        assert_eq!(
+            text_runs_joined(&node),
+            Some("Sweet Child O' Mine".to_string())
+        );
     }
 
     #[test]
